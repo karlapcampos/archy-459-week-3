@@ -1,0 +1,95 @@
+---
+title: "Untitled"
+format: html
+---
+
+```{r}
+library(tidyverse)
+library(factoextra)
+
+lithics_clean <- read_csv("lithics_clean.csv")
+
+```
+
+```{r}
+# prepare the data for PCA
+pca_data <- 
+  lithics_clean |> 
+  select(where(is.numeric)) |>
+  drop_na()
+
+# compute PCA
+pca_result <-
+  prcomp(pca_data, scale. = TRUE)
+
+
+```
+
+```{r}
+#| label: fig-kmeans-silhouette
+#| fig-cap: "Choosing the number of clusters for k-means"
+
+# silhouette plot to choose the number of clusters
+silhouette_plot <-
+  fviz_nbclust(pca_result$x, kmeans, method = "silhouette", k.max = 10) +
+  labs(title = "k-means plot")
+
+silhouette_plot
+
+# the best k is the one with the highest average silhouette width
+best_k <-
+  silhouette_plot$data |>
+  slice_max(y, n = 1) |>
+  pull(clusters) |>
+  as.integer()
+
+# run k-means on the PCA scores
+set.seed(459)
+
+kmeans_result <-
+  kmeans(pca_result$x, centers = best_k, nstart = 25)
+
+# cluster labels for the biplot
+cluster <- factor(kmeans_result$cluster)
+
+```
+
+@fig-kmeans-silhouette shows the clusters based on the widths of the artefacts. In the PCA plot we can see that the lower period lithics are smaller in length, width, and thickness, the middle period lithics are thicker and wider, but have varied lenghts, and the upper period lithics are smaller in lenght, but have varied thickness and width. In the k-means plot we see the clusters based on the differing widths of the lithics shown.
+
+```{r}
+#| label: fig-pca-biplot
+#| fig-cap: "lab 3"
+
+fviz_pca(pca_result,
+         geom.ind = "point",
+         habillage = cluster,
+         palette = "Dark2",
+         repel = TRUE,
+         title = "")
+          
+```
+
+```{r}
+#| label: fig-pca-contr
+#| fig-cap: "homework"
+
+# how much each PC is telling us
+fviz_eig(pca_result,
+         choice = "eigenvalue",
+         parallel = TRUE,
+         title = "")
+```
+
+```{r}
+#| label: fig-pca-contri-original
+#| fig-cap: "homework"
+
+fviz_contrib(pca_result,
+             choice = "var",
+             axes = 1)
+
+```
+
+```{r}
+# contribution plot for Dim 2
+```
